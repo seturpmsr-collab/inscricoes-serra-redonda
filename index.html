@@ -96,14 +96,15 @@
     </div>
 
     <div class="sec">
-      <div class="sec-title">2. Contato <span style="font-weight:400;text-transform:none;color:var(--cinza)">(opcional)</span></div>
+      <div class="sec-title">2. Contato</div>
       <div class="row">
         <div class="field">
-          <label for="telefone">Telefone / WhatsApp</label>
+          <label for="telefone">Telefone / WhatsApp <span class="req">*</span></label>
           <input type="tel" id="telefone" name="telefone" inputmode="numeric" placeholder="(83) 90000-0000">
+          <div class="err-msg" id="err-telefone">Informe um WhatsApp válido com DDD.</div>
         </div>
         <div class="field">
-          <label for="email">E-mail</label>
+          <label for="email">E-mail <span style="font-weight:400;text-transform:none;color:var(--cinza)">(opcional)</span></label>
           <input type="email" id="email" name="email" autocomplete="email" placeholder="seu@email.com">
         </div>
       </div>
@@ -159,10 +160,17 @@
       <div class="field">
         <label>Categoria <span class="req">*</span></label>
         <div class="radios">
-          <label><input type="radio" name="categoria" value="MORADOR"> Morador de Serra Redonda &mdash; R$ 40,00</label>
+          <label><input type="radio" name="categoria" value="LOCAL"> Local &mdash; R$ 40,00</label>
           <label><input type="radio" name="categoria" value="VISITANTE"> Visitante &mdash; R$ 50,00</label>
         </div>
         <div class="err-msg" id="err-categoria">Selecione a categoria.</div>
+      </div>
+      <div class="field">
+        <label for="cupom">Cupom de desconto <span style="font-weight:400;text-transform:none;color:var(--cinza)">(opcional)</span></label>
+        <input type="text" id="cupom" name="cupom" maxlength="20" placeholder="Digite o cupom, se tiver">
+        <div class="hint" id="cupom-hint">Cupom opcional &mdash; dá R$ 10,00 de desconto na inscrição.</div>
+        <div class="hint" style="margin-top:2px">Os cupons de desconto são divulgados no Instagram do <strong>Serra Experience</strong> e dos patrocinadores do evento.</div>
+        <div class="err-msg" id="err-cupom">Cupom inválido.</div>
       </div>
       <div class="field">
         <label>Tamanho da camisa <span class="req">*</span></label>
@@ -182,12 +190,6 @@
           <span>Declaro que utilizarei capacete durante todo o percurso do pedal. <span class="req">*</span></span>
         </label>
         <div class="err-msg" id="err-capacete">É obrigatório declarar o uso de capacete.</div>
-      </div>
-      <div class="field" style="margin-top:14px">
-        <label for="cupom">Cupom de desconto <span style="font-weight:400;text-transform:none;color:var(--cinza)">(opcional)</span></label>
-        <input type="text" id="cupom" name="cupom" maxlength="20" placeholder="Digite o cupom, se tiver">
-        <div class="hint" id="cupom-hint">Cupom opcional &mdash; dá R$ 10,00 de desconto na inscrição.</div>
-        <div class="err-msg" id="err-cupom">Cupom inválido.</div>
       </div>
     </div>
 
@@ -228,8 +230,9 @@
         </div>
         <button type="button" id="copiarPix" style="width:auto;margin:0;padding:9px 14px;font-size:13px;border-radius:8px;flex:0 0 auto">Copiar</button>
       </div>
-      <p style="margin-bottom:4px">2. Depois, envie o <strong>comprovante de pagamento</strong> para o contato da organização:</p>
-      <p id="contatoComprovante" style="font-weight:700;color:var(--azul-esc);margin-bottom:8px">(número a ser divulgado)</p>
+      <p style="margin-bottom:4px">2. Depois, envie o <strong>comprovante de pagamento</strong> para o WhatsApp da organização:</p>
+      <p id="contatoComprovante" style="font-weight:700;color:var(--azul-esc);margin-bottom:8px">(83) 9 8847-9956</p>
+      <a href="https://wa.me/5583988479956?text=Ol%C3%A1!%20Segue%20o%20comprovante%20de%20pagamento%20da%20minha%20inscri%C3%A7%C3%A3o%20no%20Circuito%20de%20F%C3%A9%3A%20Miss%C3%A3o%20Gruta." target="_blank" rel="noopener" style="display:inline-block;background:#25D366;color:#fff;font-weight:700;text-decoration:none;padding:11px 16px;border-radius:8px;font-size:14px;margin-bottom:8px">Enviar comprovante no WhatsApp</a>
       <p style="font-size:13px;color:var(--cinza)">Sua vaga no Circuito de Fé: Missão Gruta só é confirmada após a confirmação do pagamento.</p>
     </div>
   </div>
@@ -449,6 +452,8 @@
     else mostrarErro("nascimento",false);
     const sexoSel=document.querySelector('input[name=sexo]:checked');
     if(!sexoSel){mostrarErro("sexo",true);ok=false;}else mostrarErro("sexo",false);
+    const telEl=document.getElementById("telefone");
+    if(telEl.value.replace(/\D/g,"").length<10){mostrarErro("telefone",true,"Informe um WhatsApp válido com DDD.");ok=false;}else mostrarErro("telefone",false);
     if(cepInput.value.replace(/\D/g,"").length!==8){mostrarErro("cep",true);ok=false;}else mostrarErro("cep",false);
     const cidade=document.getElementById("cidade");
     if(!cidade.value.trim()){mostrarErro("cidade",true);ok=false;}else mostrarErro("cidade",false);
