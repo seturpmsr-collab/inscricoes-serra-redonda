@@ -232,7 +232,7 @@
     <p>As 250 vagas para o Circuito de Fé: Missão Gruta já foram preenchidas.</p>
   </div>
 </div>
-<footer>&copy; Prefeitura Municipal de Serra Redonda &middot; Secretarias de Esportes, Turismo e Cultura</footer>
+<footer>Circuito de Fé: Missão Gruta</footer>
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzq63bf-MDQVvZz_C0PVMmgzXY-5p2jODXoxo4zI8UrPqtRJ1kfsycHzSkXIYk-c9YI/exec";
@@ -480,10 +480,27 @@
         } else { cupomAplicado=""; valorFinal=40; }
       }catch(_){ /* se a checagem falhar, segue com o envio (o servidor valida) */ }
       await fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(dados)});
-      document.getElementById("valorPagar").textContent="R$ "+valorFinal+",00";
-      form.style.display="none";
-      document.getElementById("ok").style.display="block";
-      window.scrollTo({top:0,behavior:"smooth"});
+
+      // Confirmação real: relê a planilha até o CPF aparecer (não mostra "confirmado" sem gravação)
+      btn.textContent="Confirmando...";
+      const dig=dados.cpf.replace(/\D/g,"");
+      let confirmado=false;
+      for(let i=0;i<8;i++){
+        await new Promise(function(r){ setTimeout(r, i===0?1500:2500); });
+        try{
+          const vc=await jsonp(SCRIPT_URL+"?cpf="+dig);
+          if(vc && vc.existe){ confirmado=true; break; }
+        }catch(_){}
+      }
+      if(confirmado){
+        document.getElementById("valorPagar").textContent="R$ "+valorFinal+",00";
+        form.style.display="none";
+        document.getElementById("ok").style.display="block";
+        window.scrollTo({top:0,behavior:"smooth"});
+      }else{
+        alert("Recebemos o envio, mas não conseguimos confirmar a gravação da sua inscrição agora. Por favor, aguarde alguns instantes e clique em Enviar novamente. Se o problema continuar, entre em contato com a organização.");
+        btn.disabled=false; btn.textContent="Enviar inscrição";
+      }
     }catch(err){
       alert("Não foi possível enviar sua inscrição. Verifique sua conexão e tente novamente.");
       btn.disabled=false; btn.textContent="Enviar inscrição";
