@@ -232,7 +232,7 @@
       </div>
       <p style="margin-bottom:4px">2. Depois, envie o <strong>comprovante de pagamento</strong> para o WhatsApp da organização:</p>
       <p id="contatoComprovante" style="font-weight:700;color:var(--azul-esc);margin-bottom:8px">(83) 9 8847-9956</p>
-      <a href="https://wa.me/5583988479956?text=Ol%C3%A1!%20Segue%20o%20comprovante%20de%20pagamento%20da%20minha%20inscri%C3%A7%C3%A3o%20no%20Circuito%20de%20F%C3%A9%3A%20Miss%C3%A3o%20Gruta." target="_blank" rel="noopener" style="display:inline-block;background:#25D366;color:#fff;font-weight:700;text-decoration:none;padding:11px 16px;border-radius:8px;font-size:14px;margin-bottom:8px">Enviar comprovante no WhatsApp</a>
+      <a id="waComprovante" href="https://wa.me/5583988479956" target="_blank" rel="noopener" style="display:inline-block;background:#25D366;color:#fff;font-weight:700;text-decoration:none;padding:11px 16px;border-radius:8px;font-size:14px;margin-bottom:8px">Enviar comprovante no WhatsApp</a>
       <p style="font-size:13px;color:var(--cinza)">Sua vaga no Circuito de Fé: Missão Gruta só é confirmada após a confirmação do pagamento.</p>
     </div>
     <p id="avisoNaoConfirmado" style="display:none;max-width:440px;margin:12px auto 0;font-size:13px;color:#8a5a00;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:10px 12px">Não conseguimos confirmar automaticamente o registro na planilha. Guarde o comprovante; se a organização não localizar sua inscrição, entre em contato pelo WhatsApp acima.</p>
@@ -404,17 +404,20 @@
     if(!code){ resetCupom(); cupomHint.className="hint"; cupomHint.textContent="Taxa de inscrição: R$ 40,00. Com cupom válido, R$ 30,00."; return; }
     cupomTimer=setTimeout(function(){ validarCupom(code); }, 400);
   });
+  function cupomAtual(){ return cupomInput.value.trim().toUpperCase(); }
   async function validarCupom(code){
     cupomHint.style.color=""; cupomHint.className="hint loading"; cupomHint.textContent="Verificando cupom...";
     try{
       const d=await lerJson(SCRIPT_URL+"?cupom="+encodeURIComponent(code));
+      if(cupomAtual()!==code) return; // resposta obsoleta: ignora
       cupomHint.className="hint";
       if(!d || !d.valido){ resetCupom(); mostrarErro("cupom",true,"Cupom inválido."); cupomHint.textContent=""; return; }
       if(d.restantes<=0){ resetCupom(); mostrarErro("cupom",true,"Cupom esgotado (limite de usos atingido)."); cupomHint.textContent=""; return; }
+      mostrarErro("cupom",false);
       cupomAplicado=code; descontoVal=d.desconto||10;
       cupomHint.style.color="#1b7a3d";
       atualizarHintCupom();
-    }catch(_){ resetCupom(); cupomHint.className="hint"; cupomHint.textContent="Não foi possível verificar o cupom agora. Você pode enviar sem o desconto."; }
+    }catch(_){ if(cupomAtual()!==code) return; resetCupom(); cupomHint.className="hint"; cupomHint.textContent="Não foi possível verificar o cupom agora. Você pode enviar sem o desconto."; }
   }
   function atualizarHintCupom(){
     if(!cupomAplicado) return;
@@ -534,6 +537,8 @@
       }
       document.getElementById("valorPagar").textContent="R$ "+valorFinal+",00";
       document.getElementById("avisoNaoConfirmado").style.display = confirmado ? "none" : "block";
+      var msgWa="Olá! Segue o comprovante de pagamento da minha inscrição no Circuito de Fé: Missão Gruta.\nNome: "+dados.nome+"\nValor: R$ "+valorFinal+",00";
+      document.getElementById("waComprovante").href="https://wa.me/5583988479956?text="+encodeURIComponent(msgWa);
       form.style.display="none";
       document.getElementById("ok").style.display="block";
       window.scrollTo({top:0,behavior:"smooth"});
