@@ -306,6 +306,14 @@
       document.body.appendChild(s);
     });
   }
+  // Lê dados do Apps Script: tenta fetch (CORS) e, se falhar, usa JSONP. Mais resistente a bloqueios do navegador.
+  async function lerJson(url){
+    try{
+      const r=await fetch(url,{cache:"no-store"});
+      if(r.ok){ return await r.json(); }
+    }catch(_){}
+    return await jsonp(url);
+  }
   cpfInput.addEventListener("input",()=>{
     let v=cpfInput.value.replace(/\D/g,"").slice(0,11);
     v=v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
@@ -322,7 +330,7 @@
   async function verificarCpf(dig){
     cpfHint.style.display="block";
     try{
-      const d=await jsonp(SCRIPT_URL+"?cpf="+dig);
+      const d=await lerJson(SCRIPT_URL+"?cpf="+dig);
       cpfHint.style.display="none";
       if(d && d.existe){
         cpfDuplicado=true;
@@ -377,7 +385,7 @@
   }
   (async function checarVagas(){
     try{
-      var d=await jsonp(SCRIPT_URL+"?status=1");
+      var d=await lerJson(SCRIPT_URL+"?status=1");
       if(d && d.lotado) mostrarEsgotado();
     }catch(_){}
   })();
@@ -399,7 +407,7 @@
   async function validarCupom(code){
     cupomHint.style.color=""; cupomHint.className="hint loading"; cupomHint.textContent="Verificando cupom...";
     try{
-      const d=await jsonp(SCRIPT_URL+"?cupom="+encodeURIComponent(code));
+      const d=await lerJson(SCRIPT_URL+"?cupom="+encodeURIComponent(code));
       cupomHint.className="hint";
       if(!d || !d.valido){ resetCupom(); mostrarErro("cupom",true,"Cupom inválido."); cupomHint.textContent=""; return; }
       if(d.restantes<=0){ resetCupom(); mostrarErro("cupom",true,"Cupom esgotado (limite de usos atingido)."); cupomHint.textContent=""; return; }
@@ -488,9 +496,9 @@
     };
     try{
       try{
-        const st=await jsonp(SCRIPT_URL+"?status=1");
+        const st=await lerJson(SCRIPT_URL+"?status=1");
         if(st && st.lotado){ mostrarEsgotado(); return; }
-        const chk=await jsonp(SCRIPT_URL+"?cpf="+dados.cpf.replace(/\D/g,""));
+        const chk=await lerJson(SCRIPT_URL+"?cpf="+dados.cpf.replace(/\D/g,""));
         if(chk && chk.existe){
           mostrarErro("cpf",true,"Este CPF já está inscrito. Só é permitida uma inscrição por CPF.");
           document.getElementById("cpf").scrollIntoView({behavior:"smooth",block:"center"});
@@ -500,7 +508,7 @@
         var codeCup=cupomInput.value.trim().toUpperCase();
         cupomAplicado="";
         if(codeCup){
-          const dc=await jsonp(SCRIPT_URL+"?cupom="+encodeURIComponent(codeCup));
+          const dc=await lerJson(SCRIPT_URL+"?cupom="+encodeURIComponent(codeCup));
           if(dc && dc.valido && dc.restantes>0){ cupomAplicado=codeCup; descontoVal=dc.desconto||10; }
           else{
             mostrarErro("cupom",true,(dc&&dc.valido)?"Cupom esgotado. Remova-o para continuar sem desconto.":"Cupom inválido. Remova-o ou corrija para continuar.");
@@ -520,7 +528,7 @@
       for(let i=0;i<4;i++){
         await new Promise(function(r){ setTimeout(r, i===0?1200:2000); });
         try{
-          const vc=await jsonp(SCRIPT_URL+"?cpf="+dig);
+          const vc=await lerJson(SCRIPT_URL+"?cpf="+dig);
           if(vc && vc.existe){ confirmado=true; break; }
         }catch(_){}
       }
