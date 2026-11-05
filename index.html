@@ -211,7 +211,7 @@
       <p class="lgpd">Seus dados serão usados exclusivamente para organização deste evento pela Prefeitura Municipal de Serra Redonda, conforme a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).</p>
     </div>
 
-    <p style="font-size:13px;color:var(--cinza);text-align:center;margin-top:4px">Taxa de inscrição: <strong>morador R$ 40,00</strong> &middot; <strong>visitante R$ 50,00</strong> (R$ 10,00 de desconto com cupom). Após enviar, a vaga só é confirmada com o envio do comprovante de pagamento.</p>
+    <p style="font-size:13px;color:var(--cinza);text-align:center;margin-top:4px">Taxa de inscrição: <strong>local R$ 40,00</strong> &middot; <strong>visitante R$ 50,00</strong> (R$ 10,00 de desconto com cupom). Após enviar, a vaga só é confirmada com o envio do comprovante de pagamento.</p>
     <button type="submit" id="btn">Enviar inscrição</button>
   </form>
 
@@ -235,6 +235,7 @@
       <a href="https://wa.me/5583988479956?text=Ol%C3%A1!%20Segue%20o%20comprovante%20de%20pagamento%20da%20minha%20inscri%C3%A7%C3%A3o%20no%20Circuito%20de%20F%C3%A9%3A%20Miss%C3%A3o%20Gruta." target="_blank" rel="noopener" style="display:inline-block;background:#25D366;color:#fff;font-weight:700;text-decoration:none;padding:11px 16px;border-radius:8px;font-size:14px;margin-bottom:8px">Enviar comprovante no WhatsApp</a>
       <p style="font-size:13px;color:var(--cinza)">Sua vaga no Circuito de Fé: Missão Gruta só é confirmada após a confirmação do pagamento.</p>
     </div>
+    <p id="avisoNaoConfirmado" style="display:none;max-width:440px;margin:12px auto 0;font-size:13px;color:#8a5a00;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:10px 12px">Não conseguimos confirmar automaticamente o registro na planilha. Guarde o comprovante; se a organização não localizar sua inscrição, entre em contato pelo WhatsApp acima.</p>
   </div>
 
   <div class="ok" id="esgotado" style="display:none">
@@ -512,26 +513,22 @@
       valorFinal = baseValor() - (cupomAplicado ? descontoVal : 0);
       await fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(dados)});
 
-      // Confirmação real: relê a planilha até o CPF aparecer (não mostra "confirmado" sem gravação)
+      // Confirmação (melhor esforço): tenta reler a planilha, mas NÃO bloqueia se não conseguir
       btn.textContent="Confirmando...";
       const dig=dados.cpf.replace(/\D/g,"");
       let confirmado=false;
-      for(let i=0;i<8;i++){
-        await new Promise(function(r){ setTimeout(r, i===0?1500:2500); });
+      for(let i=0;i<4;i++){
+        await new Promise(function(r){ setTimeout(r, i===0?1200:2000); });
         try{
           const vc=await jsonp(SCRIPT_URL+"?cpf="+dig);
           if(vc && vc.existe){ confirmado=true; break; }
         }catch(_){}
       }
-      if(confirmado){
-        document.getElementById("valorPagar").textContent="R$ "+valorFinal+",00";
-        form.style.display="none";
-        document.getElementById("ok").style.display="block";
-        window.scrollTo({top:0,behavior:"smooth"});
-      }else{
-        alert("Recebemos o envio, mas não conseguimos confirmar a gravação da sua inscrição agora. Por favor, aguarde alguns instantes e clique em Enviar novamente. Se o problema continuar, entre em contato com a organização.");
-        btn.disabled=false; btn.textContent="Enviar inscrição";
-      }
+      document.getElementById("valorPagar").textContent="R$ "+valorFinal+",00";
+      document.getElementById("avisoNaoConfirmado").style.display = confirmado ? "none" : "block";
+      form.style.display="none";
+      document.getElementById("ok").style.display="block";
+      window.scrollTo({top:0,behavior:"smooth"});
     }catch(err){
       alert("Não foi possível enviar sua inscrição. Verifique sua conexão e tente novamente.");
       btn.disabled=false; btn.textContent="Enviar inscrição";
