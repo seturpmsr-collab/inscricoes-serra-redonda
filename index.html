@@ -157,6 +157,14 @@
     <div class="sec">
       <div class="sec-title">4. Informações do evento</div>
       <div class="field">
+        <label>Categoria <span class="req">*</span></label>
+        <div class="radios">
+          <label><input type="radio" name="categoria" value="MORADOR"> Morador de Serra Redonda &mdash; R$ 40,00</label>
+          <label><input type="radio" name="categoria" value="VISITANTE"> Visitante &mdash; R$ 50,00</label>
+        </div>
+        <div class="err-msg" id="err-categoria">Selecione a categoria.</div>
+      </div>
+      <div class="field">
         <label>Tamanho da camisa <span class="req">*</span></label>
         <div class="chips" id="chips-camisa">
           <label><input type="radio" name="camisa" value="PP"><span>PP</span></label>
@@ -178,7 +186,7 @@
       <div class="field" style="margin-top:14px">
         <label for="cupom">Cupom de desconto <span style="font-weight:400;text-transform:none;color:var(--cinza)">(opcional)</span></label>
         <input type="text" id="cupom" name="cupom" maxlength="20" placeholder="Digite o cupom, se tiver">
-        <div class="hint" id="cupom-hint">Taxa de inscrição: R$ 40,00. Com cupom válido, R$ 30,00.</div>
+        <div class="hint" id="cupom-hint">Cupom opcional &mdash; dá R$ 10,00 de desconto na inscrição.</div>
         <div class="err-msg" id="err-cupom">Cupom inválido.</div>
       </div>
     </div>
@@ -201,7 +209,7 @@
       <p class="lgpd">Seus dados serão usados exclusivamente para organização deste evento pela Prefeitura Municipal de Serra Redonda, conforme a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).</p>
     </div>
 
-    <p style="font-size:13px;color:var(--cinza);text-align:center;margin-top:4px">Taxa de inscrição: <strong>R$ 40,00</strong> (R$ 30,00 com cupom de desconto). Após enviar, a vaga só é confirmada com o envio do comprovante de pagamento.</p>
+    <p style="font-size:13px;color:var(--cinza);text-align:center;margin-top:4px">Taxa de inscrição: <strong>morador R$ 40,00</strong> &middot; <strong>visitante R$ 50,00</strong> (R$ 10,00 de desconto com cupom). Após enviar, a vaga só é confirmada com o envio do comprovante de pagamento.</p>
     <button type="submit" id="btn">Enviar inscrição</button>
   </form>
 
@@ -373,8 +381,9 @@
   // Cupom de desconto (validação em tempo real)
   const cupomInput=document.getElementById("cupom");
   const cupomHint=document.getElementById("cupom-hint");
-  let cupomAplicado=""; let valorFinal=40; let cupomTimer=null;
-  function resetCupom(){ cupomAplicado=""; valorFinal=40; }
+  let cupomAplicado=""; let valorFinal=40; let descontoVal=10; let cupomTimer=null;
+  function baseValor(){ var c=document.querySelector('input[name=categoria]:checked'); return (c && c.value==="VISITANTE") ? 50 : 40; }
+  function resetCupom(){ cupomAplicado=""; }
   cupomInput.addEventListener("input",function(){
     clearTimeout(cupomTimer);
     mostrarErro("cupom",false);
@@ -390,11 +399,22 @@
       cupomHint.className="hint";
       if(!d || !d.valido){ resetCupom(); mostrarErro("cupom",true,"Cupom inválido."); cupomHint.textContent=""; return; }
       if(d.restantes<=0){ resetCupom(); mostrarErro("cupom",true,"Cupom esgotado (limite de usos atingido)."); cupomHint.textContent=""; return; }
-      cupomAplicado=code; valorFinal=d.valorComCupom||30;
+      cupomAplicado=code; descontoVal=d.desconto||10;
       cupomHint.style.color="#1b7a3d";
-      cupomHint.textContent="Cupom válido! Desconto de R$ "+(d.desconto||10)+",00 — você paga R$ "+valorFinal+",00.";
+      atualizarHintCupom();
     }catch(_){ resetCupom(); cupomHint.className="hint"; cupomHint.textContent="Não foi possível verificar o cupom agora. Você pode enviar sem o desconto."; }
   }
+  function atualizarHintCupom(){
+    if(!cupomAplicado) return;
+    cupomHint.className="hint"; cupomHint.style.color="#1b7a3d";
+    var c=document.querySelector('input[name=categoria]:checked');
+    cupomHint.textContent = c
+      ? ("Cupom válido! Você paga R$ "+(baseValor()-descontoVal)+",00.")
+      : ("Cupom válido! Desconto de R$ "+descontoVal+",00 aplicado (selecione a categoria para ver o valor).");
+  }
+  document.querySelectorAll('input[name=categoria]').forEach(function(r){
+    r.addEventListener('change', atualizarHintCupom);
+  });
 
   // Copiar chave PIX
   (function(){
@@ -436,6 +456,8 @@
     if(!estado.value){mostrarErro("estado",true);ok=false;}else mostrarErro("estado",false);
     const camisa=document.querySelector('input[name=camisa]:checked');
     if(!camisa){mostrarErro("camisa",true);ok=false;}else mostrarErro("camisa",false);
+    const categoriaSel=document.querySelector('input[name=categoria]:checked');
+    if(!categoriaSel){mostrarErro("categoria",true);ok=false;}else mostrarErro("categoria",false);
     const capacete=document.getElementById("capacete");
     if(!capacete.checked){mostrarErro("capacete",true);ok=false;}else mostrarErro("capacete",false);
     const aceite=document.getElementById("aceite");
@@ -454,6 +476,7 @@
       bairro:document.getElementById("bairro").value.trim(),
       cidade:cidade.value.trim(), estado:estado.value,
       camisa:camisa.value, capacete:"SIM", aceite:"SIM",
+      categoria:categoriaSel.value,
       cupom:cupomInput.value.trim().toUpperCase(),
       dataInscricao:new Date().toLocaleString("pt-BR")
     };
@@ -469,16 +492,19 @@
         }
         // Cupom: revalida no envio e define o valor
         var codeCup=cupomInput.value.trim().toUpperCase();
+        cupomAplicado="";
         if(codeCup){
           const dc=await jsonp(SCRIPT_URL+"?cupom="+encodeURIComponent(codeCup));
-          if(dc && dc.valido && dc.restantes>0){ cupomAplicado=codeCup; valorFinal=dc.valorComCupom||30; }
+          if(dc && dc.valido && dc.restantes>0){ cupomAplicado=codeCup; descontoVal=dc.desconto||10; }
           else{
             mostrarErro("cupom",true,(dc&&dc.valido)?"Cupom esgotado. Remova-o para continuar sem desconto.":"Cupom inválido. Remova-o ou corrija para continuar.");
             document.getElementById("cupom").scrollIntoView({behavior:"smooth",block:"center"});
             btn.disabled=false; btn.textContent="Enviar inscrição"; return;
           }
-        } else { cupomAplicado=""; valorFinal=40; }
+        }
+        valorFinal = baseValor() - (cupomAplicado ? descontoVal : 0);
       }catch(_){ /* se a checagem falhar, segue com o envio (o servidor valida) */ }
+      valorFinal = baseValor() - (cupomAplicado ? descontoVal : 0);
       await fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(dados)});
 
       // Confirmação real: relê a planilha até o CPF aparecer (não mostra "confirmado" sem gravação)
